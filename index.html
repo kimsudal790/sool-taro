@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>🔮 술타로</title>
+<style>
+  :root {
+    --bg: #0d0d1a;
+    --card-bg: #1a1a2e;
+    --gold: #f0c040;
+    --gold2: #c8960c;
+    --purple: #7c3aed;
+    --pink: #e879a0;
+    --text: #e8e0f0;
+    --muted: #8880a0;
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+    min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 20px;
+    background-image: radial-gradient(ellipse at 50% 0%, #1e0a3c 0%, #0d0d1a 70%);
+  }
+
+  /* ── 별 배경 ── */
+  .stars { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+  .star { position: absolute; border-radius: 50%; background: white; animation: twinkle 3s infinite; }
+  @keyframes twinkle { 0%,100%{opacity:.2} 50%{opacity:.8} }
+
+  /* ── 공통 ── */
+  .screen { position: relative; z-index: 1; width: 100%; max-width: 440px; text-align: center; }
+  .title { font-size: 2.4rem; color: var(--gold); margin-bottom: 6px; letter-spacing: 4px; text-shadow: 0 0 20px #f0c04088; }
+  .subtitle { color: var(--muted); font-size: 0.9rem; margin-bottom: 32px; }
+
+  /* ── 버튼 ── */
+  .btn {
+    width: 100%; padding: 16px; border: none; border-radius: var(--radius);
+    font-size: 1.1rem; font-weight: 700; cursor: pointer; transition: all .15s;
+    letter-spacing: 1px;
+  }
+  .btn-gold { background: linear-gradient(135deg, var(--gold), var(--gold2)); color: #1a0a00; }
+  .btn-gold:active { transform: scale(.97); }
+  .btn-outline {
+    background: transparent; border: 1.5px solid var(--purple); color: var(--text);
+    margin-top: 10px;
+  }
+  .btn-outline:active { background: #3a0a6e44; }
+
+  /* ── 입력 ── */
+  .input-group { margin-bottom: 12px; text-align: left; }
+  .input-group label { display: block; font-size: .85rem; color: var(--muted); margin-bottom: 4px; }
+  .input-group input {
+    width: 100%; padding: 14px 16px;
+    background: #16162a; border: 1.5px solid #3a3a5a; border-radius: 10px;
+    color: var(--text); font-size: 1rem;
+    outline: none; transition: border-color .2s;
+  }
+  .input-group input:focus { border-color: var(--purple); }
+  .input-group input::placeholder { color: #505070; }
+  .add-player { color: var(--purple); background: none; border: none; cursor: pointer; font-size: .9rem; margin: 4px 0 16px; }
+
+  /* ── 카드 ── */
+  .card-arena { perspective: 1200px; margin: 24px auto; width: 200px; height: 320px; }
+  .card-inner {
+    width: 100%; height: 100%; position: relative;
+    transform-style: preserve-3d; transition: transform .7s cubic-bezier(.4,0,.2,1);
+  }
+  .card-inner.flipped { transform: rotateY(180deg); }
+  .card-face {
+    position: absolute; inset: 0; border-radius: 20px;
+    backface-visibility: hidden; -webkit-backface-visibility: hidden;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 20px; overflow: hidden;
+  }
+  .card-back {
+    background: linear-gradient(145deg, #1e0a3c, #2d1060);
+    border: 2px solid var(--gold);
+    cursor: pointer;
+    user-select: none;
+  }
+  .card-back::before {
+    content: '';
+    position: absolute; inset: 8px;
+    border: 1px solid #f0c04055;
+    border-radius: 14px;
+  }
+  .card-back-symbol { font-size: 5rem; opacity: .7; }
+  .card-back-text { color: var(--gold); font-size: .85rem; margin-top: 12px; letter-spacing: 3px; opacity: .8; }
+  .card-front {
+    background: linear-gradient(145deg, #1a0535, #0a1a3a);
+    border: 2px solid var(--gold);
+    transform: rotateY(180deg);
+  }
+  .card-emoji { font-size: 3.5rem; margin-bottom: 10px; }
+  .card-name { font-size: 1rem; font-weight: 700; color: var(--gold); text-align: center; line-height: 1.3; }
+  .card-num { font-size: .75rem; color: var(--muted); margin-top: 4px; }
+
+  /* ── 결과창 ── */
+  .result-box {
+    background: #16162a; border-radius: var(--radius); padding: 20px;
+    border: 1px solid #3a3a6a; margin: 0 0 16px; text-align: left;
+  }
+  .result-meaning { font-size: .95rem; line-height: 1.6; color: var(--text); margin-bottom: 14px; }
+  .mission-badge {
+    display: inline-block; padding: 8px 16px;
+    background: linear-gradient(135deg, #7c3aed, #c026d3);
+    border-radius: 30px; font-size: .9rem; font-weight: 700; color: white;
+    width: 100%; text-align: center;
+  }
+
+  /* ── 플레이어 순서 ── */
+  .player-bar {
+    display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center;
+  }
+  .player-chip {
+    padding: 6px 14px; border-radius: 20px; font-size: .8rem;
+    background: #2a2a4a; color: var(--muted);
+    transition: all .2s;
+  }
+  .player-chip.active {
+    background: linear-gradient(135deg, var(--purple), var(--pink));
+    color: white; font-weight: 700;
+    box-shadow: 0 0 12px #7c3aed66;
+  }
+  .player-chip.done { text-decoration: line-through; opacity: .4; }
+
+  /* ── 라운드 헤더 ── */
+  .round-header { margin-bottom: 20px; }
+  .round-header .whose-turn { font-size: 1.4rem; font-weight: 700; color: var(--gold); }
+  .round-header .sub { font-size: .85rem; color: var(--muted); margin-top: 4px; }
+
+  /* ── 도움말 ── */
+  .hint { font-size: .8rem; color: var(--muted); margin-top: 8px; }
+
+  /* ── 최종 결과 ── */
+  .final-list { text-align: left; margin: 12px 0 24px; }
+  .final-item {
+    padding: 14px; border-radius: 12px; background: #16162a;
+    margin-bottom: 10px; border: 1px solid #2a2a4a;
+  }
+  .final-item .name { font-weight: 700; color: var(--gold); font-size: .9rem; }
+  .final-item .card-title { font-size: .95rem; margin-top: 4px; }
+  .final-item .final-mission { font-size: .8rem; color: #c084fc; margin-top: 4px; }
+
+  .hidden { display: none !important; }
+
+  /* 반짝 애니 */
+  @keyframes glow-in { 0%{opacity:0;transform:scale(.8)} 100%{opacity:1;transform:scale(1)} }
+  .glow-in { animation: glow-in .4s ease forwards; }
+</style>
+</head>
+<body>
+
+<div class="stars" id="stars"></div>
+
+<!-- ── 화면 1: 설정 ── -->
+<div class="screen" id="screen-setup">
+  <div class="title">🔮 술타로</div>
+  <div class="subtitle">타로 카드로 즐기는 술게임</div>
+
+  <div id="player-inputs">
+    <div class="input-group">
+      <label>플레이어 1</label>
+      <input type="text" placeholder="이름 입력" maxlength="8">
+    </div>
+    <div class="input-group">
+      <label>플레이어 2</label>
+      <input type="text" placeholder="이름 입력" maxlength="8">
+    </div>
+  </div>
+  <button class="add-player" onclick="addPlayer()">+ 플레이어 추가 (최대 8명)</button>
+
+  <button class="btn btn-gold" onclick="startGame()">✨ 게임 시작</button>
+</div>
+
+<!-- ── 화면 2: 게임 ── -->
+<div class="screen hidden" id="screen-game">
+  <div class="title" style="font-size:1.6rem; margin-bottom:4px;">🔮 술타로</div>
+
+  <div class="player-bar" id="player-bar"></div>
+
+  <div class="round-header" id="round-header"></div>
+
+  <!-- 카드 -->
+  <div id="card-container">
+    <div class="card-arena" id="card-arena">
+      <div class="card-inner" id="card-inner">
+        <div class="card-face card-back" onclick="flipCard()">
+          <div class="card-back-symbol">✦</div>
+          <div class="card-back-text">터치하여 뽑기</div>
+        </div>
+        <div class="card-face card-front">
+          <div class="card-emoji" id="card-emoji"></div>
+          <div class="card-name" id="card-name"></div>
+          <div class="card-num" id="card-num"></div>
+        </div>
+      </div>
+    </div>
+    <div class="hint" id="flip-hint">카드를 터치하세요</div>
+  </div>
+
+  <!-- 결과 (뒤집은 후) -->
+  <div class="hidden" id="result-area">
+    <div class="result-box glow-in">
+      <div class="result-meaning" id="result-meaning"></div>
+      <div class="mission-badge" id="result-mission"></div>
+    </div>
+    <button class="btn btn-gold" onclick="nextPlayer()" id="btn-next">다음 사람 →</button>
+  </div>
+</div>
+
+<!-- ── 화면 3: 최종 ── -->
+<div class="screen hidden" id="screen-final">
+  <div class="title" style="font-size:1.6rem; margin-bottom:4px;">🎴 결과 요약</div>
+  <div class="subtitle" id="final-subtitle"></div>
+  <div class="final-list" id="final-list"></div>
+  <button class="btn btn-gold" onclick="restartGame()">🔄 다시 하기</button>
+  <button class="btn btn-outline" onclick="goSetup()">👥 멤버 바꾸기</button>
+</div>
+
+<script>
+// ── 타로 카드 데이터 (메이저 아르카나 22장) ──
+const TAROT = [
+  { num:"0", name:"바보", en:"The Fool", emoji:"🤡",
+    meaning:"아무 계획 없이 뛰어드는 용감한 바보. 새로운 모험의 시작!",
+    missions:["🍻 오른쪽 사람이 원샷", "🍺 무모한 당신, 혼자 두 모금", "🎲 원샷 or 비밀 하나 공개"] },
+  { num:"I", name:"마법사", en:"The Magician", emoji:"🧙",
+    meaning:"모든 것을 내 손 안에. 재주 많은 당신이 오늘의 MC!",
+    missions:["🎤 노래 한 소절 부르거나 원샷", "✨ 마법 주문 외우기 실패하면 원샷", "🍺 능력을 보여줘! 게임 벌칙 2배"] },
+  { num:"II", name:"여사제", en:"The High Priestess", emoji:"🌙",
+    meaning:"깊은 비밀을 품고 있어요. 말하지 않은 게 너무 많군요.",
+    missions:["🤫 비밀 하나 털거나 두 모금", "🌙 왼쪽 사람이 한 모금", "💜 진실 or 원샷"] },
+  { num:"III", name:"여황제", en:"The Empress", emoji:"👑",
+    meaning:"풍요롭고 아름다운 에너지. 오늘 가장 인기 있는 사람!",
+    missions:["🍾 다같이 한 모금 (여왕님 명령)", "👑 원하는 사람 지목해서 마시게 하기", "🌸 칭찬 한 마디 하거나 원샷"] },
+  { num:"IV", name:"황제", en:"The Emperor", emoji:"⚔️",
+    meaning:"강력한 지도자. 하지만 지금은 명령 대신 술이 지배합니다.",
+    missions:["👑 오른쪽 사람 지목 원샷", "⚔️ 가위바위보 져서 지는 사람 원샷", "🍺 황제답게 혼자 세 모금"] },
+  { num:"V", name:"교황", en:"The Hierophant", emoji:"⛪",
+    meaning:"전통과 규칙을 따르는 지혜로운 사람. 오늘만큼은 규칙을 어겨봐요.",
+    missions:["📖 인생 명언 말하기 실패 시 원샷", "⛪ 오늘의 교훈 말하거나 두 모금", "🍺 모두가 한 모금씩"] },
+  { num:"VI", name:"연인", en:"The Lovers", emoji:"💕",
+    meaning:"선택의 기로. 사랑과 욕망 사이에서 갈등하고 있군요.",
+    missions:["💕 옆 사람이랑 같이 한 모금", "🎯 좋아하는 사람 유형 말하거나 원샷", "💘 지목한 사람이랑 같이 마시기"] },
+  { num:"VII", name:"전차", en:"The Chariot", emoji:"🏆",
+    meaning:"승리를 향해 전속력! 멈추지 않는 추진력의 소유자.",
+    missions:["🏃 10초 안에 원샷 or 두 모금", "🏆 오늘 이긴 것 자랑하거나 원샷", "⚡ 가장 빠르게 마신 사람이 면제"] },
+  { num:"VIII", name:"힘", en:"Strength", emoji:"🦁",
+    meaning:"내면의 강인함. 두려움을 다스리는 진정한 용기.",
+    missions:["💪 팔씨름 해서 진 사람 원샷", "🦁 동물 소리 내거나 원샷", "🍺 용기 있게 원샷!"] },
+  { num:"IX", name:"은둔자", en:"The Hermit", emoji:"🕯️",
+    meaning:"혼자만의 시간이 필요해요. 오늘은 조용히 마셔요.",
+    missions:["🤫 1분간 말하면 한 모금씩", "🕯️ 눈 감고 이름 대면 원샷", "🧘 다음 차례까지 스마트폰 금지 or 원샷"] },
+  { num:"X", name:"운명의 바퀴", en:"Wheel of Fortune", emoji:"🎡",
+    meaning:"인생의 변화! 운명이 돌아갑니다. 오늘은 누가 제일 운이 좋을까요?",
+    missions:["🎡 룰렛 돌리듯 랜덤으로 한 명 지목 원샷", "🍀 가위바위보 전원 진 사람 원샷", "🎲 주사위 게임 (없으면 홀짝)"] },
+  { num:"XI", name:"정의", en:"Justice", emoji:"⚖️",
+    meaning:"공정한 심판. 모든 행동에는 결과가 따릅니다.",
+    missions:["⚖️ 오늘 가장 못된 짓 고백하거나 원샷", "👨‍⚖️ 심판! 안 마셨다고 생각되는 사람 지목", "🍺 공평하게 다같이 한 모금"] },
+  { num:"XII", name:"매달린 사람", en:"The Hanged Man", emoji:"🙃",
+    meaning:"관점을 바꿔보세요. 지금의 고통이 나중엔 지혜가 됩니다.",
+    missions:["🙃 거꾸로 말하기 실패하면 원샷", "😅 가장 이상한 버릇 공개 or 원샷", "🍺 희생자가 되어 혼자 두 모금"] },
+  { num:"XIII", name:"죽음", en:"Death", emoji:"💀",
+    meaning:"끝이 아니라 변화의 시작. 두려워하지 마세요!",
+    missions:["💀 오늘 죽기 전에 하고 싶은 것 말하거나 원샷", "🥃 원샷 (죽음을 각오하고)", "😱 다같이 공포 표정 짓기, 가장 못하면 원샷"] },
+  { num:"XIV", name:"절제", en:"Temperance", emoji:"🌊",
+    meaning:"균형과 조화. 과하지도 부족하지도 않게.",
+    missions:["🌊 딱 한 모금만 (절제해요)", "⚖️ 오늘 가장 절제한 사람이 면제", "🍵 오늘 제일 많이 마신 사람 원샷"] },
+  { num:"XV", name:"악마", en:"The Devil", emoji:"😈",
+    meaning:"욕망과 유혹. 벗어나기 어려운 굴레에 빠져 있군요.",
+    missions:["😈 가장 나쁜 욕망 고백 or 원샷", "🔥 왼쪽+오른쪽 다 마셔야 함", "🍺 악마의 원샷! 2잔"] },
+  { num:"XVI", name:"탑", en:"The Tower", emoji:"⚡",
+    meaning:"갑작스러운 충격과 변화. 쌓아온 것이 무너지는 순간!",
+    missions:["💥 폭탄 게임 (박수치다 멈추는 사람 원샷)", "⚡ 가장 큰 실수 고백 or 두 모금", "🏚️ 다같이 원샷 (탑이 무너졌다!)"] },
+  { num:"XVII", name:"별", en:"The Star", emoji:"⭐",
+    meaning:"희망과 치유. 가장 빛나는 순간이 오고 있어요.",
+    missions:["⭐ 오늘 가장 반짝이는 사람은? 지목해서 그 사람 면제!", "🌟 소원 말하면 한 모금 면제", "✨ 다같이 건배! 한 모금씩"] },
+  { num:"XVIII", name:"달", en:"The Moon", emoji:"🌕",
+    meaning:"환상과 착각의 세계. 진실이 뭔지 알 수가 없네요.",
+    missions:["🌕 보름달에 소원 빌기 (진지하게) or 원샷", "🦊 거짓말 하기 들키면 원샷", "🌊 오늘 가장 취한 척 잘하는 사람이 면제"] },
+  { num:"XIX", name:"태양", en:"The Sun", emoji:"☀️",
+    meaning:"기쁨과 성공! 오늘 가장 행복한 에너지를 뿜어내고 있어요.",
+    missions:["☀️ 오늘 가장 기쁜 일 말하면 면제!", "🌞 셀카 타임 (안 찍히면 원샷)", "🎉 다같이 건배! 신나게 한 모금"] },
+  { num:"XX", name:"심판", en:"Judgement", emoji:"📯",
+    meaning:"깨달음의 순간. 과거를 돌아보고 새롭게 시작할 때.",
+    missions:["📯 오늘 가장 후회한 일 고백 or 원샷", "🔔 심판이 되어 벌칙 대상 지목", "🍺 새 출발을 위해 원샷"] },
+  { num:"XXI", name:"세계", en:"The World", emoji:"🌍",
+    meaning:"완성과 성취! 모든 것이 완벽하게 마무리됩니다. 오늘 밤은 최고!",
+    missions:["🌍 다같이 원샷 (세계 정복!)", "🏆 오늘의 MVP 뽑기, MVP는 면제 나머지 원샷", "🎊 건배사 외치거나 두 모금"] },
+];
+
+let players = [];
+let order = [];
+let currentIdx = 0;
+let results = [];
+let usedCards = new Set();
+let drawnCard = null;
+let flipped = false;
+
+// ── 별 생성 ──
+function createStars() {
+  const c = document.getElementById('stars');
+  for (let i = 0; i < 60; i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    const size = Math.random() * 2.5 + 0.5;
+    s.style.cssText = `
+      width:${size}px; height:${size}px;
+      left:${Math.random()*100}%; top:${Math.random()*100}%;
+      animation-delay:${Math.random()*3}s;
+      animation-duration:${2+Math.random()*3}s;
+    `;
+    c.appendChild(s);
+  }
+}
+
+// ── 플레이어 추가 ──
+function addPlayer() {
+  const wrap = document.getElementById('player-inputs');
+  const count = wrap.querySelectorAll('.input-group').length;
+  if (count >= 8) return;
+  const div = document.createElement('div');
+  div.className = 'input-group';
+  div.innerHTML = `<label>플레이어 ${count+1}</label><input type="text" placeholder="이름 입력" maxlength="8">`;
+  wrap.appendChild(div);
+}
+
+// ── 게임 시작 ──
+function startGame() {
+  const inputs = document.querySelectorAll('#player-inputs input');
+  players = [];
+  inputs.forEach((inp, i) => {
+    const name = inp.value.trim() || `플레이어${i+1}`;
+    players.push(name);
+  });
+  if (players.length < 1) { alert('최소 1명 필요해요!'); return; }
+
+  order = [...players];
+  currentIdx = 0;
+  results = [];
+  usedCards = new Set();
+
+  showScreen('game');
+  renderPlayerBar();
+  setupRound();
+}
+
+function showScreen(name) {
+  ['setup','game','final'].forEach(s => {
+    document.getElementById(`screen-${s}`).classList.add('hidden');
+  });
+  document.getElementById(`screen-${name}`).classList.remove('hidden');
+}
+
+// ── 플레이어 바 ──
+function renderPlayerBar() {
+  const bar = document.getElementById('player-bar');
+  bar.innerHTML = order.map((p, i) => {
+    let cls = 'player-chip';
+    if (i === currentIdx) cls += ' active';
+    else if (i < currentIdx) cls += ' done';
+    return `<span class="${cls}">${i < currentIdx ? '✓ ' : ''}${p}</span>`;
+  }).join('');
+}
+
+// ── 라운드 설정 ──
+function setupRound() {
+  flipped = false;
+  drawnCard = null;
+
+  // 카드 초기화
+  const inner = document.getElementById('card-inner');
+  inner.classList.remove('flipped');
+  document.getElementById('card-emoji').textContent = '';
+  document.getElementById('card-name').textContent = '';
+  document.getElementById('card-num').textContent = '';
+
+  document.getElementById('result-area').classList.add('hidden');
+  document.getElementById('card-container').classList.remove('hidden');
+  document.getElementById('flip-hint').textContent = '카드를 터치하세요';
+
+  const p = order[currentIdx];
+  const rh = document.getElementById('round-header');
+  rh.innerHTML = `
+    <div class="whose-turn">✨ ${p}의 차례</div>
+    <div class="sub">${currentIdx + 1} / ${order.length} 번째</div>
+  `;
+}
+
+// ── 카드 뒤집기 ──
+function flipCard() {
+  if (flipped) return;
+  flipped = true;
+
+  // 랜덤 카드 뽑기
+  let available = TAROT.filter((_, i) => !usedCards.has(i));
+  if (available.length === 0) { usedCards.clear(); available = [...TAROT]; }
+  const idx = Math.floor(Math.random() * available.length);
+  drawnCard = available[idx];
+  usedCards.add(TAROT.indexOf(drawnCard));
+
+  // 카드 앞면 채우기
+  document.getElementById('card-emoji').textContent = drawnCard.emoji;
+  document.getElementById('card-name').textContent = drawnCard.name;
+  document.getElementById('card-num').textContent = `${drawnCard.num} · ${drawnCard.en}`;
+
+  // 플립
+  document.getElementById('card-inner').classList.add('flipped');
+  document.getElementById('flip-hint').textContent = '';
+
+  // 0.7초 후 결과 표시
+  setTimeout(showResult, 750);
+}
+
+// ── 결과 표시 ──
+function showResult() {
+  document.getElementById('card-container').classList.add('hidden');
+
+  const mission = drawnCard.missions[Math.floor(Math.random() * drawnCard.missions.length)];
+  document.getElementById('result-meaning').innerHTML =
+    `<strong style="color:var(--gold)">${drawnCard.emoji} ${drawnCard.name} (${drawnCard.en})</strong><br><br>${drawnCard.meaning}`;
+  document.getElementById('result-mission').textContent = '🍺 ' + mission.replace(/^[🍻🍺🎤✨🌙💜🤫🕯️🧘🎡🍀🎲⚖️👨‍⚖️🙃😅💪🦁🥃😱🌊⭐🌟✨🌕🦊☀️🌞🎉📯🔔🍵⚡💥🏚️🌍🏆🎊]/u,'').trim();
+
+  // 결과 저장
+  results.push({ player: order[currentIdx], card: drawnCard, mission });
+
+  const isLast = currentIdx >= order.length - 1;
+  const btn = document.getElementById('btn-next');
+  btn.textContent = isLast ? '🎴 결과 보기' : '다음 사람 →';
+
+  document.getElementById('result-area').classList.remove('hidden');
+  document.getElementById('result-area').classList.add('glow-in');
+  setTimeout(() => document.getElementById('result-area').classList.remove('glow-in'), 400);
+}
+
+// ── 다음 플레이어 ──
+function nextPlayer() {
+  if (currentIdx >= order.length - 1) {
+    showFinal();
+    return;
+  }
+  currentIdx++;
+  renderPlayerBar();
+
+  // 카드 다시 뒤집기
+  const inner = document.getElementById('card-inner');
+  inner.classList.add('flipped');
+  document.getElementById('result-area').classList.add('hidden');
+  document.getElementById('card-container').classList.remove('hidden');
+
+  setTimeout(() => {
+    inner.classList.remove('flipped');
+    setTimeout(setupRound, 50);
+  }, 100);
+}
+
+// ── 최종 결과 ──
+function showFinal() {
+  showScreen('final');
+  document.getElementById('final-subtitle').textContent =
+    `${order.length}명 모두 카드를 뽑았어요!`;
+
+  const list = document.getElementById('final-list');
+  list.innerHTML = results.map(r => `
+    <div class="final-item">
+      <div class="name">${r.player}</div>
+      <div class="card-title">${r.card.emoji} ${r.card.name} (${r.card.en})</div>
+      <div class="final-mission">${r.mission}</div>
+    </div>
+  `).join('');
+}
+
+function restartGame() {
+  currentIdx = 0;
+  results = [];
+  usedCards = new Set();
+  showScreen('game');
+  renderPlayerBar();
+  setupRound();
+}
+
+function goSetup() {
+  showScreen('setup');
+}
+
+// ── 초기화 ──
+createStars();
+</script>
+</body>
+</html>
