@@ -587,7 +587,7 @@ const SPREAD_DATA={
 // ══════════════════════════════════════
 //  상태
 // ══════════════════════════════════════
-let spreadN=1, drawnCards=[], question="", allPlaced=false, selectedSlot=-1;
+let spreadN=1, drawnCards=[], question="", allPlaced=false, selectedSlot=-1, revealedSlots=new Set();
 
 // ══════════════════════════════════════
 //  페이지 전환
@@ -600,7 +600,7 @@ function restart(){startDraw(spreadN)}
 //  스프레드 시작
 // ══════════════════════════════════════
 function startDraw(n){
-  spreadN=n; drawnCards=[]; allPlaced=false; selectedSlot=-1;
+  spreadN=n; drawnCards=[]; allPlaced=false; selectedSlot=-1; revealedSlots=new Set();
   question=document.getElementById('q-input').value.trim();
   ensureAudio();
   if(!bgmOn) startBGM();
@@ -757,17 +757,63 @@ function onFanPick(el,cardIdx){
   const data=SPREAD_DATA[spreadN];
   const posLabel=spreadN===1?'카드 공개':(data?data.pos[slotIdx]:`카드 ${slotIdx+1}`);
 
-  // reveal 오버레이 → 닫힌 후 슬롯 배치
+  // 뒷면으로 바로 배치 (오버레이 없이)
   setTimeout(()=>{
-    showRevealOverlay(cardIdx,isRev,posLabel,()=>{
-      if(spreadN===1){
-        document.getElementById('fan-area').style.display='none';
-        placeBigCardRevealed(cardIdx,isRev);
-      } else {
-        placeSlotCardRevealed(slotIdx,cardIdx,isRev);
-      }
-    });
+    if(spreadN===1){
+      document.getElementById('fan-area').style.display='none';
+      placeBigCardFaceDown(cardIdx,isRev);
+    } else {
+      placeSlotFaceDown(slotIdx,cardIdx,isRev);
+    }
   },180);
+}
+
+// ══════════════════════════════════════
+//  단일 카드 — 뒷면으로 배치 (클릭 대기)
+// ══════════════════════════════════════
+function placeBigCardFaceDown(cardIdx,reversed){
+  const card=T[cardIdx];
+  const wrap=document.getElementById('big-card-wrap');
+  wrap.innerHTML=`<div class="big-card" id="big-card"
+    style="transform:scale(.85);transition:transform .45s cubic-bezier(.34,1.3,.64,1);cursor:pointer"
+    onclick="onBigCardClick(${cardIdx},${reversed})">
+    <div class="big-face big-back">✦</div>
+    <div class="big-face big-front ${reversed?'rev':''}">
+      <div class="big-front-inner">
+        <div class="big-card-n">${card.n}</div>
+        <div class="big-card-deco">✦ · · ✦</div>
+        <div class="big-art-wrap">
+          <div class="big-art-ring"><div class="big-emoji">${card.e}</div></div>
+        </div>
+        <div class="big-card-deco">✦ · · ✦</div>
+        <div class="big-nameplate">
+          <span class="big-title">${card.name}</span>
+          <span class="big-en">${card.en.toUpperCase()}</span>
+        </div>
+        ${reversed?'<div class="big-rev-badge">↺ 역방향</div>':''}
+      </div>
+    </div>
+  </div>`;
+  sndPlace();
+  const bc=document.getElementById('big-card');
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    bc.style.transform='scale(1)';
+    // 안내
+    const panel=document.getElementById('interp-panel');
+    panel.innerHTML=`<div class="pick-all-done">✨ 카드를 눌러 앞면을 확인하세요</div>`;
+    document.getElementById('main-btns').classList.remove('hidden');
+  }));
+}
+
+function onBigCardClick(cardIdx,reversed){
+  if(revealedSlots.has(0)) return;
+  revealedSlots.add(0);
+  const posLabel='카드 공개';
+  showRevealOverlay(cardIdx,reversed,posLabel,()=>{
+    // 오버레이 닫힌 후 큰 카드 앞면으로 전환
+    placeBigCardRevealed(cardIdx,reversed);
+  });
+  sndReveal();
 }
 
 // ══════════════════════════════════════
@@ -802,8 +848,40 @@ function placeBigCardRevealed(cardIdx,reversed){
     bc.style.transform='rotateY(180deg) scale(1)';
     setTimeout(()=>{
       showSlotInterp(0);
-      document.getElementById('main-btns').classList.remove('hidden');
     },500);
+  }));
+}
+
+// ══════════════════════════════════════
+//  슬롯 카드 배치 — 뒷면으로 (클릭 대기)
+// ══════════════════════════════════════
+function placeSlotFaceDown(slotIdx,cardIdx,reversed){
+  const card=T[cardIdx];
+  const wrap=document.getElementById(`slot-wrap-${slotIdx}`);
+  wrap.innerHTML=`<div class="slot-wrap"><div class="slot-card" id="sc-${slotIdx}"
+    style="transform:scale(0);transition:transform .4s cubic-bezier(.34,1.5,.64,1)">
+    <div class="slot-face slot-back">✦</div>
+    <div class="slot-face slot-front ${reversed?'rev':''}">
+      <div style="font-size:.42rem;color:var(--gold);opacity:.6;letter-spacing:2px;margin-bottom:2px">${card.n}</div>
+      <div class="slot-emoji">${card.e}</div>
+      <div style="width:80%;height:1px;background:#e8b84b33;margin:3px 0"></div>
+      <div class="slot-name">${card.name}</div>
+      ${reversed?'<div class="slot-rev-badge">↺</div>':''}
+    </div>
+  </div></div>`;
+  sndPlace();
+  const sc=document.getElementById(`sc-${slotIdx}`);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    sc.style.transform='scale(1)'; // 뒷면 상태로 팝
+    setTimeout(()=>{
+      if(drawnCards.length<spreadN){
+        highlightSlot(drawnCards.length);
+        updateFanHint();
+        renderFan();
+      } else {
+        onAllPlaced();
+      }
+    },450);
   }));
 }
 
@@ -829,17 +907,6 @@ function placeSlotCardRevealed(slotIdx,cardIdx,reversed){
   const sc=document.getElementById(`sc-${slotIdx}`);
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
     sc.style.transform='rotateY(180deg) scale(1)';
-    setTimeout(()=>{
-      const nameEl=document.getElementById(`slot-name-${slotIdx}`);
-      if(nameEl) nameEl.textContent=card.name+(reversed?' ↺':'');
-      if(drawnCards.length<spreadN){
-        highlightSlot(drawnCards.length);
-        updateFanHint();
-        renderFan();
-      } else {
-        onAllPlaced();
-      }
-    },450);
   }));
 }
 
@@ -855,7 +922,7 @@ function onAllPlaced(){
   sndReveal();
   // 안내 메시지
   const panel=document.getElementById('interp-panel');
-  panel.innerHTML=`<div class="pick-all-done">✨ 카드를 눌러 해석을 확인하세요</div>`;
+  panel.innerHTML=`<div class="pick-all-done">✨ 원하는 카드를 눌러 앞면을 공개하세요</div>`;
 }
 
 // ══════════════════════════════════════
@@ -863,8 +930,23 @@ function onAllPlaced(){
 // ══════════════════════════════════════
 function onSlotClick(i){
   if(!allPlaced||i>=drawnCards.length) return;
-  showSlotInterp(i);
-  sndReveal();
+  const {idx,reversed}=drawnCards[i];
+  const data=SPREAD_DATA[spreadN];
+  const posLabel=data?data.pos[i]:`카드 ${i+1}`;
+
+  if(!revealedSlots.has(i)){
+    // 아직 미공개 → 오버레이로 앞면 공개 후 슬롯 앞면 전환 + 해설
+    revealedSlots.add(i);
+    sndReveal();
+    showRevealOverlay(idx,reversed,posLabel,()=>{
+      placeSlotCardRevealed(i,idx,reversed);
+      showSlotInterp(i);
+    });
+  } else {
+    // 이미 공개된 슬롯 → 해설만
+    showSlotInterp(i);
+    sndReveal();
+  }
 }
 
 function showSlotInterp(i){
