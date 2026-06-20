@@ -706,11 +706,14 @@ function startDrawAB(){
   choiceB=b||'선택 B';
   abMode=true;
   const preset=AB_PRESETS[abCardsPerSide];
-  const total=abCardsPerSide*2;
-  // total을 키로 SPREAD_DATA 동적 구성
+  const total=abCardsPerSide*2+1; // +1 총결론
+  const conclusionPos={pos:'총결론',prefix:{
+    up:'두 선택 모두를 넘어서, 지금 당신에게 진짜 필요한 것을 보여줘요. ',
+    rev:'어느 쪽도 아직 준비가 되지 않았을 수 있어요. 더 깊은 질문이 필요해요. ',
+  }};
   SPREAD_DATA[total]={
-    pos:[...preset.pos,...preset.pos],
-    prefix:[...preset.prefix,...preset.prefix],
+    pos:[...preset.pos,...preset.pos,conclusionPos.pos],
+    prefix:[...preset.prefix,...preset.prefix,conclusionPos.prefix],
   };
   document.getElementById('ab-panel').classList.add('hidden');
   startDraw(total);
@@ -767,11 +770,14 @@ function renderSpreadLayout(){
         <div class="slot-name-under" id="slot-name-${i}"></div>
       </div>`;
     const half=abCardsPerSide;
+    const conclusionIdx=half*2;
     layout.innerHTML=
       `<div class="ab-row-label a-label" style="grid-column:1/-1">⚖️ ${choiceA}</div>`+
       posArr.slice(0,half).map((lbl,i)=>slotHtml(lbl,i)).join('')+
       `<div class="ab-row-label b-label" style="grid-column:1/-1">⚖️ ${choiceB}</div>`+
-      posArr.slice(half).map((lbl,i)=>slotHtml(lbl,i+half)).join('');
+      posArr.slice(half,conclusionIdx).map((lbl,i)=>slotHtml(lbl,i+half)).join('')+
+      `<div class="ab-row-label" style="grid-column:1/-1;background:#1a1a3a44;color:var(--gold);border:1px solid #e8b84b44">✦ 총결론</div>`+
+      `<div style="grid-column:1/-1;display:flex;justify-content:center">${slotHtml('총결론',conclusionIdx)}</div>`;
   } else {
     layout.innerHTML=posArr.map((lbl,i)=>`
       <div class="slot" id="slot-${i}" onclick="onSlotClick(${i})">
@@ -1135,8 +1141,9 @@ function buildInterp(card,reversed,posIdx){
   let posName='';
   if(posIdx!==null&&posIdx!==undefined&&data){
     if(abMode){
-      const side=posIdx<abCardsPerSide?choiceA:choiceB;
-      posName=`${side} · ${data.pos[posIdx]} · `;
+      const isConclusion=posIdx===abCardsPerSide*2;
+      const side=isConclusion?null:(posIdx<abCardsPerSide?choiceA:choiceB);
+      posName=isConclusion?'✦ 총결론 · ':`${side} · ${data.pos[posIdx]} · `;
     } else {
       posName=`${data.pos[posIdx]} · `;
     }
