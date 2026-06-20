@@ -193,6 +193,9 @@ h1{font-size:1.7rem;color:var(--gold);text-align:center;letter-spacing:6px;
 
 #see-results-wrap{text-align:center;margin:16px 0 8px}
 #see-results-btn{font-size:1.05rem;padding:14px 36px;letter-spacing:1px}
+.slot.ready-reveal{cursor:pointer}
+.slot.ready-reveal .slot-back{animation:pulse-gold 1.5s ease-in-out infinite}
+@keyframes pulse-gold{0%,100%{box-shadow:0 0 0 0 #e8b84b44}50%{box-shadow:0 0 12px 4px #e8b84b66}}
 #main-btns{margin-top:14px}
 .pick-all-done{text-align:center;color:var(--muted);font-size:.8rem;padding:14px 0;
   animation:fadeUp .4s ease}
@@ -930,49 +933,44 @@ function onAllPlaced(){
 }
 
 // ══════════════════════════════════════
-//  결과보기 — 순서대로 자동 공개
+//  결과보기 — 클릭 대기 모드 진입
 // ══════════════════════════════════════
 function showAllResults(){
   document.getElementById('see-results-wrap').classList.add('hidden');
-  document.getElementById('interp-panel').innerHTML='';
   document.getElementById('main-btns').classList.remove('hidden');
-  let i=0;
-  function revealNext(){
-    if(i>=drawnCards.length) return;
-    const {idx,reversed}=drawnCards[i];
-    const card=T[idx];
-    const slotIdx=i;
-    // 카드 앞면으로 플립 (슬롯 or 빅카드)
-    const sc=document.getElementById(spreadN===1?'big-card':`sc-${slotIdx}`);
+  document.getElementById('interp-panel').innerHTML=
+    `<div class="pick-all-done">👆 카드를 하나씩 눌러 앞면을 확인하세요</div>`;
+  document.querySelectorAll('.slot').forEach(el=>el.classList.add('ready-reveal'));
+  const bc=document.getElementById('big-card');
+  if(bc) bc.onclick=()=>onSlotClick(0);
+}
+
+// ══════════════════════════════════════
+//  슬롯 클릭 → 플립 + 해석
+// ══════════════════════════════════════
+function onSlotClick(i){
+  if(!allPlaced||i>=drawnCards.length) return;
+  const {idx,reversed}=drawnCards[i];
+  const card=T[idx];
+
+  if(!revealedSlots.has(i)){
+    // 미공개 → 플립 애니메이션 + 해석 표시
+    revealedSlots.add(i);
+    const sc=document.getElementById(spreadN===1?'big-card':`sc-${i}`);
     if(sc){
       sc.style.transition='transform .7s cubic-bezier(.4,0,.2,1)';
       sc.style.transform='rotateY(180deg) scale(1)';
     }
-    revealedSlots.add(slotIdx);
     sndFlip();
-    // 플립 후 해석 패널에 추가
     setTimeout(()=>{
-      const panel=document.getElementById('interp-panel');
-      const div=document.createElement('div');
-      div.innerHTML=buildInterp(card,reversed,spreadN>1?slotIdx:null);
-      panel.appendChild(div.firstChild);
       sndReveal();
-      panel.lastElementChild?.scrollIntoView({behavior:'smooth',block:'nearest'});
-      i++;
-      setTimeout(revealNext, spreadN>3?900:1200);
-    },500);
+      showSlotInterp(i);
+    },450);
+  } else {
+    // 이미 공개 → 해석만 다시 표시
+    showSlotInterp(i);
+    sndReveal();
   }
-  revealNext();
-}
-
-// ══════════════════════════════════════
-//  슬롯 클릭 → 해석
-// ══════════════════════════════════════
-function onSlotClick(i){
-  // 결과보기 후 공개된 슬롯만 해설 스크롤
-  if(!allPlaced||i>=drawnCards.length||!revealedSlots.has(i)) return;
-  showSlotInterp(i);
-  sndReveal();
 }
 
 function showSlotInterp(i){
