@@ -82,8 +82,9 @@ h1{font-size:1.7rem;color:var(--gold);text-align:center;letter-spacing:6px;
 .slot-name-under{font-size:.6rem;color:var(--gold);margin-top:4px;text-align:center}
 
 /* 단일 카드 크게 */
-#big-card-wrap{display:flex;flex-direction:column;align-items:center;margin:10px 0}
-.big-card{width:180px;height:280px;position:relative;transform-style:preserve-3d;
+#big-card-wrap{display:flex;flex-direction:column;align-items:center;margin:10px 0;
+  perspective:900px}
+.big-card{width:190px;height:300px;position:relative;transform-style:preserve-3d;
   transition:transform .8s cubic-bezier(.4,0,.2,1)}
 .big-card.flipped{transform:rotateY(180deg)}
 .big-face{position:absolute;inset:0;border-radius:16px;
@@ -102,14 +103,26 @@ h1{font-size:1.7rem;color:var(--gold);text-align:center;letter-spacing:6px;
 
 /* 팬 */
 #fan-area{margin:4px 0 12px}
-#fan-hint{text-align:center;color:var(--muted);font-size:.8rem;margin-bottom:8px;min-height:18px}
-#fan-inner{position:relative;height:200px;display:flex;align-items:flex-end;justify-content:center}
-.fan-card{position:absolute;width:54px;height:90px;border-radius:8px;
-  background:linear-gradient(145deg,#1c0840,#0a1040);border:1.5px solid var(--gold2);
-  cursor:pointer;transform-origin:bottom center;bottom:0;
-  display:flex;align-items:center;justify-content:center;font-size:1.2rem;opacity:.85;
-  transition:filter .15s,opacity .3s,transform .3s}
-.fan-card:hover{filter:brightness(1.6);z-index:10}
+#fan-hint{text-align:center;color:var(--muted);font-size:.8rem;margin-bottom:10px;min-height:18px}
+/* 가로 펼침 카드 덱 */
+#fan-scroll{overflow-x:auto;overflow-y:visible;padding:18px 12px 10px;
+  -webkit-overflow-scrolling:touch;scrollbar-width:none}
+#fan-scroll::-webkit-scrollbar{display:none}
+#fan-inner{display:flex;gap:-18px;align-items:flex-end;width:max-content;padding-bottom:8px}
+.fan-card{width:80px;height:130px;border-radius:10px;flex-shrink:0;margin-right:-18px;
+  background:linear-gradient(160deg,#1e0a48,#0a1050);
+  border:1.5px solid var(--gold2);
+  cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-size:1.8rem;
+  box-shadow:2px 4px 14px #00000066;
+  transition:transform .18s cubic-bezier(.34,1.4,.64,1),filter .18s,box-shadow .18s;
+  position:relative;z-index:1}
+.fan-card::before{content:'';position:absolute;inset:7px;
+  border:1px solid #e8b84b28;border-radius:6px;pointer-events:none}
+.fan-card:hover{transform:translateY(-22px) scale(1.06)!important;
+  filter:brightness(1.5);z-index:20;
+  box-shadow:0 18px 36px #00000099,0 0 20px #e8b84b44;border-color:var(--gold)}
+.fan-card:active{transform:translateY(-30px) scale(1.1)!important}
 
 /* 해석 패널 */
 #interp-panel{margin:8px 0}
@@ -216,7 +229,7 @@ h1{font-size:1.7rem;color:var(--gold);text-align:center;letter-spacing:6px;
   <div id="spread-layout"></div>
   <div id="fan-area">
     <p id="fan-hint"></p>
-    <div id="fan-inner"></div>
+    <div id="fan-scroll"><div id="fan-inner"></div></div>
   </div>
   <div id="interp-panel"></div>
   <div id="main-btns" class="hidden">
@@ -550,18 +563,23 @@ function highlightSlot(i){
 function renderFan(){
   const inner=document.getElementById('fan-inner');
   const pool=[...Array(T.length).keys()].filter(i=>!drawnCards.find(d=>d.idx===i));
-  const display=pool.sort(()=>Math.random()-.5).slice(0,Math.min(13,pool.length));
-  const angleRange=76;
+  // 전체 덱에서 셔플해서 최대 22장 보여줌
+  const display=pool.sort(()=>Math.random()-.5).slice(0,Math.min(22,pool.length));
   inner.innerHTML='';
   display.forEach((cardIdx,i)=>{
-    const angle=-angleRange/2+(angleRange/(display.length-1||1))*i;
     const el=document.createElement('div');
     el.className='fan-card';
-    el.textContent='✦';
-    el.style.cssText=`transform:rotate(${angle}deg) translateY(-18px);left:calc(50% - 27px);position:absolute;bottom:0`;
+    // 카드 뒷면 — 살짝 랜덤 기울기로 자연스럽게
+    const tilt=(Math.random()-0.5)*5; // -2.5 ~ +2.5도
+    const liftOffset=Math.random()*6; // 살짝 높이 차이
+    el.style.cssText=`transform:rotate(${tilt}deg) translateY(${-liftOffset}px)`;
+    el.innerHTML='<span style="opacity:.4;font-size:1.6rem">✦</span>';
     el.onclick=()=>onFanPick(el,cardIdx);
     inner.appendChild(el);
   });
+  // 스크롤을 가운데로
+  const scroll=document.getElementById('fan-scroll');
+  setTimeout(()=>{scroll.scrollLeft=(scroll.scrollWidth-scroll.clientWidth)/2},50);
 }
 
 function updateFanHint(){
@@ -577,10 +595,11 @@ function updateFanHint(){
 // ══════════════════════════════════════
 function onFanPick(el,cardIdx){
   sndPick();
-  // 팬 카드 사라지는 효과
-  el.style.transition='transform .25s,opacity .25s';
-  el.style.transform=el.style.transform+' scale(0)';
+  // 팬 카드 선택 효과 — 위로 튀어오르다 사라짐
+  el.style.transition='transform .3s cubic-bezier(.34,1.5,.64,1),opacity .3s';
+  el.style.transform='translateY(-50px) scale(1.15)';
   el.style.opacity='0';
+  el.style.pointerEvents='none';
 
   const isRev=Math.random()<.35;
   const slotIdx=drawnCards.length;
