@@ -141,6 +141,22 @@ h1{font-size:1.7rem;color:var(--gold);text-align:center;letter-spacing:6px;
 
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 .fade-up{animation:fadeUp .4s ease forwards}
+
+/* 질문 가이드 */
+.q-guide-label{font-size:.75rem;color:var(--muted);margin-bottom:8px;letter-spacing:1px}
+.q-cats{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px}
+.q-cat{padding:6px 13px;border-radius:20px;font-size:.8rem;cursor:pointer;
+  background:#13132a;border:1.5px solid #2e2e5a;color:var(--muted);transition:all .18s}
+.q-cat:active{transform:scale(.95)}
+.q-cat.on{border-color:var(--gold);color:var(--gold);background:#1e1a08}
+.q-suggestions{display:none;flex-direction:column;gap:7px;margin-bottom:12px}
+.q-suggestions.show{display:flex;animation:fadeUp .25s ease}
+.q-sug{padding:10px 14px;background:#0e0e24;border:1px solid #2a2a4a;border-radius:10px;
+  font-size:.83rem;color:var(--text);cursor:pointer;line-height:1.5;transition:all .18s;text-align:left}
+.q-sug:hover,.q-sug:active{border-color:var(--purple);color:var(--gold);background:#12102a}
+.q-sug::before{content:'→ ';color:var(--muted);font-size:.75rem}
+.q-tip{font-size:.72rem;color:#4a4870;text-align:center;margin-top:-4px;margin-bottom:10px;
+  line-height:1.5}
 </style>
 </head>
 <body>
@@ -151,7 +167,18 @@ h1{font-size:1.7rem;color:var(--gold);text-align:center;letter-spacing:6px;
 <div class="page" id="p-start">
   <h1>🔮 타로</h1>
   <p class="sub">마음 속 질문을 떠올리며 스프레드를 선택하세요</p>
-  <textarea class="q-input" id="q-input" rows="2" placeholder="오늘의 질문을 입력해보세요 (선택)"></textarea>
+  <p class="q-guide-label">주제를 고르면 질문을 추천해 드려요</p>
+  <div class="q-cats" id="q-cats">
+    <div class="q-cat" onclick="selectCat(this,'love')">💕 연애</div>
+    <div class="q-cat" onclick="selectCat(this,'work')">💼 진로·일</div>
+    <div class="q-cat" onclick="selectCat(this,'money')">💰 재물</div>
+    <div class="q-cat" onclick="selectCat(this,'growth')">🌱 자기성장</div>
+    <div class="q-cat" onclick="selectCat(this,'rel')">🤝 인간관계</div>
+    <div class="q-cat" onclick="selectCat(this,'now')">🔮 지금 이 순간</div>
+  </div>
+  <div class="q-suggestions" id="q-suggestions"></div>
+  <p class="q-tip">💡 타로는 '예/아니오'보다 "지금 내가 어떤 에너지 안에 있는지"를 물을 때 가장 깊이 답해줘요</p>
+  <textarea class="q-input" id="q-input" rows="2" placeholder="질문을 직접 입력하거나, 위에서 선택해보세요 (선택)"></textarea>
   <div class="spread-grid-sel">
     <div class="spread-card" onclick="startDraw(1)">
       <div class="sc-icon">🃏</div>
@@ -712,6 +739,77 @@ function buildInterp(card,reversed,posIdx){
     <div class="interp-text ${reversed?'rev-text':''}">${base}</div>
     <div class="interp-q">${card.q}</div>
   </div>`;
+}
+
+// ══════════════════════════════════════
+//  질문 가이드
+// ══════════════════════════════════════
+const Q_BANK = {
+  love: [
+    "지금 이 사람과의 관계에서 내가 놓치고 있는 것은 무엇인가요?",
+    "내 마음이 진짜 원하는 것을 솔직하게 보여주세요",
+    "이 관계가 나에게 어떤 에너지를 가져오고 있나요?",
+    "새로운 만남을 위해 내가 먼저 열어야 할 것은?",
+    "나는 지금 사랑받을 준비가 되어 있나요?",
+  ],
+  work: [
+    "지금 내 커리어에서 집중해야 할 방향은 무엇인가요?",
+    "이 선택 앞에서 내가 두려워하는 것의 실체는?",
+    "지금 내 일에서 나를 가장 막고 있는 것은?",
+    "내가 진짜 하고 싶은 일과 지금 하는 일, 얼마나 가까운가요?",
+    "이 기회를 잡았을 때 흐를 에너지를 보여주세요",
+  ],
+  money: [
+    "지금 내 재물 흐름에서 막혀 있는 에너지는 무엇인가요?",
+    "내가 돈에 대해 가진 두려움이나 믿음이 나를 어떻게 이끌고 있나요?",
+    "지금 이 결정이 내 재정에 가져올 에너지는?",
+    "풍요를 막고 있는 내 안의 패턴은 무엇인가요?",
+    "내가 지금 놓치고 있는 기회가 있다면?",
+  ],
+  growth: [
+    "지금 내가 성장하기 위해 마주해야 할 것은 무엇인가요?",
+    "내 잠재력을 가장 크게 막고 있는 것은?",
+    "지금 나는 어떤 에너지 안에서 살고 있나요?",
+    "놓아야 할 것을 아직 붙잡고 있다면, 그게 무엇인가요?",
+    "지금 내게 가장 필요한 변화는 어떤 방향인가요?",
+  ],
+  rel: [
+    "이 관계에서 내가 진심을 다하고 있나요?",
+    "지금 갈등이 있다면, 내가 보지 못하고 있는 상대방의 에너지는?",
+    "내가 이 사람에게 기대하는 것과 실제로 받는 것의 차이는?",
+    "가까운 사람과의 관계에서 내가 놓치고 있는 것은?",
+    "이 관계가 나에게 가져다주는 것과 가져가는 것은?",
+  ],
+  now: [
+    "오늘 내가 주목해야 할 에너지는 무엇인가요?",
+    "지금 이 순간 내 내면이 가장 필요로 하는 것은?",
+    "지금 내 삶에서 흐르고 있는 전체 에너지를 보여주세요",
+    "오늘 내가 알아야 할 것을 카드가 말해주세요",
+    "지금 나를 가장 잘 표현하는 에너지는 무엇인가요?",
+  ],
+};
+
+function selectCat(el, cat) {
+  // 토글
+  const wasOn = el.classList.contains('on');
+  document.querySelectorAll('.q-cat').forEach(c => c.classList.remove('on'));
+  const sug = document.getElementById('q-suggestions');
+  if (wasOn) { sug.classList.remove('show'); return; }
+
+  el.classList.add('on');
+  const qs = Q_BANK[cat] || [];
+  sug.innerHTML = qs.map(q =>
+    `<button class="q-sug" onclick="fillQ(this, \`${q.replace(/`/g,"'")}\`)">${q}</button>`
+  ).join('');
+  sug.classList.add('show');
+}
+
+function fillQ(el, q) {
+  document.getElementById('q-input').value = q;
+  // 선택된 질문 강조
+  document.querySelectorAll('.q-sug').forEach(b => b.style.borderColor='');
+  el.style.borderColor = 'var(--gold)';
+  el.style.color = 'var(--gold)';
 }
 
 // ══════════════════════════════════════
