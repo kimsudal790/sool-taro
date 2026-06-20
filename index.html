@@ -154,6 +154,35 @@ h1{font-size:1.7rem;color:var(--gold);text-align:center;letter-spacing:6px;
 
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 .fade-up{animation:fadeUp .4s ease forwards}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+/* 카드 reveal 오버레이 */
+#reveal-ov{position:fixed;inset:0;z-index:999;
+  background:rgba(4,2,18,.88);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+  cursor:pointer;animation:fadeIn .2s ease}
+.rv-label{font-size:.75rem;color:var(--muted);letter-spacing:3px;text-transform:uppercase}
+.rv-card-outer{perspective:900px}
+.rv-card{width:210px;height:330px;position:relative;transform-style:preserve-3d;
+  transform:rotateY(0deg);transition:transform .85s cubic-bezier(.4,0,.2,1)}
+.rv-face{position:absolute;inset:0;border-radius:18px;
+  backface-visibility:hidden;-webkit-backface-visibility:hidden;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px}
+.rv-back{background:linear-gradient(145deg,#1c0840,#0a1040);border:2.5px solid var(--gold)}
+.rv-back::before{content:'';position:absolute;inset:9px;border:1px solid #e8b84b44;border-radius:12px}
+.rv-back-sym{font-size:3.5rem;opacity:.35}
+.rv-front{background:linear-gradient(160deg,#140828,#080e30);border:2.5px solid var(--gold);
+  transform:rotateY(180deg);
+  box-shadow:0 0 40px #e8b84b22,inset 0 0 30px #1a083022}
+.rv-front.rev{transform:rotateY(180deg) rotate(180deg)}
+.rv-emoji{font-size:4.5rem;margin-bottom:12px;filter:drop-shadow(0 0 12px #ffffff44)}
+.rv-name{font-size:1.15rem;font-weight:700;color:var(--gold);text-align:center;
+  text-shadow:0 0 16px #e8b84b88}
+.rv-en{font-size:.72rem;color:var(--muted);margin-top:4px}
+.rv-rev-badge{font-size:.72rem;background:#7c1d1d;color:#fca5a5;
+  padding:4px 12px;border-radius:20px;margin-top:8px}
+.rv-pos{font-size:.82rem;color:var(--gold);font-style:italic;opacity:.8}
+.rv-tap{font-size:.7rem;color:#3a386a;margin-top:4px;letter-spacing:1px}
 
 /* 질문 가이드 */
 .q-guide-label{font-size:.75rem;color:var(--muted);margin-bottom:8px;letter-spacing:1px}
@@ -591,11 +620,52 @@ function updateFanHint(){
 }
 
 // ══════════════════════════════════════
+//  카드 공개 오버레이 (전체화면 플립)
+// ══════════════════════════════════════
+function showRevealOverlay(cardIdx, reversed, posLabel, onDone){
+  const card=T[cardIdx];
+  const ov=document.createElement('div');
+  ov.id='reveal-ov';
+  ov.innerHTML=`
+    <p class="rv-label">${posLabel||'카드 공개'}</p>
+    <div class="rv-card-outer">
+      <div class="rv-card" id="rv-card">
+        <div class="rv-face rv-back"><span class="rv-back-sym">✦</span></div>
+        <div class="rv-face rv-front ${reversed?'rev':''}">
+          <div class="rv-emoji">${card.e}</div>
+          <div class="rv-name">${card.name}</div>
+          <div class="rv-en">${card.n} · ${card.en}</div>
+          ${reversed?'<div class="rv-rev-badge">↺ 역방향</div>':''}
+        </div>
+      </div>
+    </div>
+    <p class="rv-pos">${reversed?'그림자 에너지':'정방향 에너지'}</p>
+    <p class="rv-tap">탭해서 계속</p>`;
+  document.body.appendChild(ov);
+
+  // 뒷면 → 앞면 플립
+  setTimeout(()=>{
+    sndFlip();
+    document.getElementById('rv-card').style.transform='rotateY(180deg)';
+  },350);
+
+  let dismissed=false;
+  const dismiss=()=>{
+    if(dismissed) return;
+    dismissed=true;
+    ov.style.transition='opacity .22s';
+    ov.style.opacity='0';
+    setTimeout(()=>{ov.remove(); onDone();},220);
+  };
+  ov.addEventListener('click',dismiss);
+  setTimeout(dismiss,2400); // 2.4초 후 자동 닫기
+}
+
+// ══════════════════════════════════════
 //  팬 카드 선택
 // ══════════════════════════════════════
 function onFanPick(el,cardIdx){
   sndPick();
-  // 팬 카드 선택 효과 — 위로 튀어오르다 사라짐
   el.style.transition='transform .3s cubic-bezier(.34,1.5,.64,1),opacity .3s';
   el.style.transform='translateY(-50px) scale(1.15)';
   el.style.opacity='0';
@@ -605,44 +675,32 @@ function onFanPick(el,cardIdx){
   const slotIdx=drawnCards.length;
   drawnCards.push({idx:cardIdx,reversed:isRev});
 
-  if(spreadN===1){
-    // 단일 카드: 크게 배치
-    setTimeout(()=>{
-      document.getElementById('fan-area').style.opacity='0';
-      placeBigCard(cardIdx,isRev);
-    },180);
-  } else {
-    // 멀티: 슬롯에 배치
-    setTimeout(()=>{
-      placeSlotCard(slotIdx,cardIdx,isRev);
-      sndPlace();
-      setTimeout(()=>{
-        flipSlot(slotIdx);
-        sndFlip();
-        // 이름 표시
-        setTimeout(()=>{
-          const nameEl=document.getElementById(`slot-name-${slotIdx}`);
-          if(nameEl) nameEl.textContent=T[cardIdx].name+(isRev?' ↺':'');
-          if(drawnCards.length<spreadN){
-            highlightSlot(drawnCards.length);
-            updateFanHint();
-            renderFan();
-          } else {
-            onAllPlaced();
-          }
-        },200);
-      },480);
-    },180);
-  }
+  // 포지션 라벨 결정
+  const data=SPREAD_DATA[spreadN];
+  const posLabel=spreadN===1?'카드 공개':(data?data.pos[slotIdx]:`카드 ${slotIdx+1}`);
+
+  // reveal 오버레이 → 닫힌 후 슬롯 배치
+  setTimeout(()=>{
+    showRevealOverlay(cardIdx,isRev,posLabel,()=>{
+      if(spreadN===1){
+        document.getElementById('fan-area').style.display='none';
+        placeBigCardRevealed(cardIdx,isRev);
+      } else {
+        placeSlotCardRevealed(slotIdx,cardIdx,isRev);
+      }
+    });
+  },180);
 }
 
 // ══════════════════════════════════════
-//  단일 카드 크게 배치
+//  단일 카드 — reveal 후 큰 카드로 정착
 // ══════════════════════════════════════
-function placeBigCard(cardIdx,reversed){
+function placeBigCardRevealed(cardIdx,reversed){
   const card=T[cardIdx];
   const wrap=document.getElementById('big-card-wrap');
-  wrap.innerHTML=`<div class="big-card" id="big-card" style="transform:scale(0);transition:transform .4s cubic-bezier(.34,1.5,.64,1)">
+  // 이미 앞면 확인했으므로 바로 앞면 보여주기 (뒤집힌 상태로 시작해서 살짝 스케일)
+  wrap.innerHTML=`<div class="big-card" id="big-card"
+    style="transform:rotateY(180deg) scale(.85);transition:transform .45s cubic-bezier(.34,1.3,.64,1)">
     <div class="big-face big-back"><span style="font-size:3rem;opacity:.5">✦</span></div>
     <div class="big-face big-front ${reversed?'rev':''}">
       <div class="big-emoji">${card.e}</div>
@@ -654,29 +712,23 @@ function placeBigCard(cardIdx,reversed){
   sndPlace();
   const bc=document.getElementById('big-card');
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
-    bc.style.transform='scale(1)';
+    bc.style.transform='rotateY(180deg) scale(1)';
     setTimeout(()=>{
-      bc.style.transition='transform .75s cubic-bezier(.4,0,.2,1)';
-      bc.style.transform='rotateY(180deg)';
-      sndFlip();
-      setTimeout(()=>{
-        document.getElementById('fan-area').style.opacity='';
-        document.getElementById('fan-area').style.display='none';
-        showSlotInterp(0);
-        document.getElementById('main-btns').classList.remove('hidden');
-      },800);
+      showSlotInterp(0);
+      document.getElementById('main-btns').classList.remove('hidden');
     },500);
   }));
 }
 
 // ══════════════════════════════════════
-//  슬롯 카드 배치 (면다운)
+//  슬롯 카드 배치 — reveal 후 바로 앞면
 // ══════════════════════════════════════
-function placeSlotCard(slotIdx,cardIdx,reversed){
+function placeSlotCardRevealed(slotIdx,cardIdx,reversed){
   const card=T[cardIdx];
   const wrap=document.getElementById(`slot-wrap-${slotIdx}`);
+  // 오버레이에서 이미 봤으니 슬롯에는 앞면이 이미 보이는 상태로 팝
   wrap.innerHTML=`<div class="slot-wrap"><div class="slot-card" id="sc-${slotIdx}"
-    style="transform:scale(0);transition:transform .38s cubic-bezier(.34,1.56,.64,1)">
+    style="transform:rotateY(180deg) scale(0);transition:transform .4s cubic-bezier(.34,1.5,.64,1)">
     <div class="slot-face slot-back">✦</div>
     <div class="slot-face slot-front ${reversed?'rev':''}">
       <div class="slot-emoji">${card.e}</div>
@@ -684,17 +736,22 @@ function placeSlotCard(slotIdx,cardIdx,reversed){
       ${reversed?'<div class="slot-rev-badge">↺</div>':''}
     </div>
   </div></div>`;
+  sndPlace();
   const sc=document.getElementById(`sc-${slotIdx}`);
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
-    sc.style.transform='scale(1)';
+    sc.style.transform='rotateY(180deg) scale(1)';
+    setTimeout(()=>{
+      const nameEl=document.getElementById(`slot-name-${slotIdx}`);
+      if(nameEl) nameEl.textContent=card.name+(reversed?' ↺':'');
+      if(drawnCards.length<spreadN){
+        highlightSlot(drawnCards.length);
+        updateFanHint();
+        renderFan();
+      } else {
+        onAllPlaced();
+      }
+    },450);
   }));
-}
-
-function flipSlot(slotIdx){
-  const sc=document.getElementById(`sc-${slotIdx}`);
-  if(!sc) return;
-  sc.style.transition='transform .6s cubic-bezier(.4,0,.2,1)';
-  sc.style.transform='rotateY(180deg)';
 }
 
 // ══════════════════════════════════════
