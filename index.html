@@ -397,7 +397,7 @@ function renderThreeDetail(){
   const card=T[idx];
   document.getElementById('three-detail').innerHTML =
     `<div class="drawn-wrap">${buildCardHTML(card,reversed,false)}</div>` +
-    buildInterp(card,reversed);
+    buildInterp(card,reversed,activeTab);
 }
 
 // ── 공통 카드 HTML ──
@@ -416,11 +416,23 @@ function buildCardHTML(card, reversed, withAnim){
 }
 
 // ── 해석 HTML ──
-function buildInterp(card, reversed){
-  const txt = reversed ? card.rev : card.up;
+const POS_PREFIX = [
+  // 과거
+  {up:"과거에는 이런 에너지가 있었어요. ", rev:"과거에는 이런 흐름이 있었어요. "},
+  // 현재
+  {up:"", rev:""},
+  // 미래
+  {up:"앞으로 이런 에너지가 찾아올 거예요. ", rev:"앞으로 이런 흐름을 주의해야 해요. "},
+];
+
+function buildInterp(card, reversed, posIdx=null){
+  const base = reversed ? card.rev : card.up;
+  const prefix = posIdx !== null ? (reversed ? POS_PREFIX[posIdx].rev : POS_PREFIX[posIdx].up) : "";
+  const txt = prefix + base;
+  const posName = posIdx !== null ? `${POS_LABELS[posIdx]} · ` : "";
   return `<div class="interp fade-up">
     <div class="interp-kw">${card.kw.map(k=>`<span class="kw-chip">${k}</span>`).join('')}</div>
-    <div class="interp-label">${reversed?'↺ 역방향 해석':'▲ 정방향 해석'}</div>
+    <div class="interp-label">${posName}${reversed?'↺ 역방향 해석':'▲ 정방향 해석'}</div>
     <div class="interp-text ${reversed?'rev-text':''}">${txt}</div>
   </div>`;
 }
