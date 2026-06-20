@@ -145,6 +145,32 @@ h1{font-size:1.7rem;color:var(--gold);text-align:center;letter-spacing:6px;
 #interp-panel{margin:8px 0}
 .interp{background:var(--surface);border-radius:var(--r);padding:18px;
   border:1px solid #2e2e5a;margin-bottom:12px}
+/* 해석 패널 카드 앞면 미니 */
+.interp-card-wrap{display:flex;justify-content:center;margin-bottom:16px}
+.interp-card-face{width:120px;height:188px;border-radius:12px;
+  background:linear-gradient(160deg,#110622,#08102e);border:2px solid var(--gold);
+  display:flex;flex-direction:column;align-items:center;padding:10px 8px;
+  position:relative;box-shadow:0 0 24px #e8b84b22}
+.interp-card-face::before{content:'';position:absolute;inset:6px;
+  border:1px solid #e8b84b44;border-radius:9px;pointer-events:none}
+.interp-card-face::after{content:'✦';position:absolute;top:10px;left:10px;
+  font-size:.55rem;color:var(--gold);opacity:.5}
+.interp-card-face .ic-corner-br{position:absolute;bottom:10px;right:10px;
+  font-size:.55rem;color:var(--gold);opacity:.5}
+.interp-card-face .ic-num{font-size:.62rem;color:var(--gold);letter-spacing:3px;opacity:.75;margin-bottom:2px}
+.interp-card-face .ic-deco{font-size:.42rem;color:var(--gold);opacity:.35;letter-spacing:4px;margin:2px 0}
+.interp-card-face .ic-ring{width:72px;height:72px;border-radius:50%;
+  border:1.5px solid #e8b84b55;
+  background:radial-gradient(circle,#200a50 0%,#08102a 100%);
+  box-shadow:0 0 18px #e8b84b22,inset 0 0 16px #04020e66;
+  display:flex;align-items:center;justify-content:center;
+  flex:1}
+.interp-card-face .ic-emoji{font-size:2.5rem;line-height:1;filter:drop-shadow(0 0 8px #ffffff33)}
+.interp-card-face .ic-plate{width:100%;text-align:center;
+  border-top:1px solid #e8b84b33;padding-top:6px;margin-top:4px}
+.interp-card-face .ic-name{font-size:.82rem;font-weight:700;color:var(--gold);display:block}
+.interp-card-face .ic-en{font-size:.58rem;color:var(--muted);letter-spacing:1px;display:block;margin-top:1px}
+.interp-card-face.rev-card{transform:rotate(180deg)}
 .interp-scene{font-size:.8rem;color:var(--muted);font-style:italic;
   line-height:1.6;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #1e1e3a}
 .interp-kw{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
@@ -870,7 +896,21 @@ function buildInterp(card,reversed,posIdx){
   const data=SPREAD_DATA[spreadN];
   const posName=(posIdx!==null&&posIdx!==undefined&&data)?`${data.pos[posIdx]} · `:'';
   const shadowLabel=reversed?'🌑 그림자 에너지':'☀️ 정방향 에너지';
+  const cardFace=`<div class="interp-card-wrap">
+    <div class="interp-card-face${reversed?' rev-card':''}">
+      <span class="ic-corner-br">✦</span>
+      <div class="ic-num">${card.n}</div>
+      <div class="ic-deco">✦ · · ✦</div>
+      <div class="ic-ring"><div class="ic-emoji">${card.e}</div></div>
+      <div class="ic-deco">✦ · · ✦</div>
+      <div class="ic-plate">
+        <span class="ic-name">${card.name}</span>
+        <span class="ic-en">${card.en.toUpperCase()}</span>
+      </div>
+    </div>
+  </div>`;
   return `<div class="interp fade-up">
+    ${cardFace}
     <div class="interp-scene">${card.img}</div>
     <div class="interp-kw">${card.kw.map(k=>`<span class="kw-chip">${k}</span>`).join('')}</div>
     <div class="interp-label">${posName}${shadowLabel}</div>
