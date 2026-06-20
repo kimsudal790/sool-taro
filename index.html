@@ -61,7 +61,8 @@ h1{font-size:1.7rem;color:var(--gold);text-align:center;letter-spacing:6px;
 @keyframes glow-pulse{0%,100%{box-shadow:0 0 0 0 #e8b84b00}50%{box-shadow:0 0 0 6px #e8b84b22}}
 
 /* 미니 카드 (배치 후) */
-.slot-card{width:74px;height:112px;position:relative;transform-style:preserve-3d;
+.slot-card{width:74px;height:112px;position:relative;
+  transform-style:preserve-3d;-webkit-transform-style:preserve-3d;
   border-radius:10px}
 .slot-face{position:absolute;inset:0;border-radius:10px;
   backface-visibility:hidden;-webkit-backface-visibility:hidden;
@@ -84,22 +85,38 @@ h1{font-size:1.7rem;color:var(--gold);text-align:center;letter-spacing:6px;
 /* 단일 카드 크게 */
 #big-card-wrap{display:flex;flex-direction:column;align-items:center;margin:10px 0;
   perspective:900px}
-.big-card{width:190px;height:300px;position:relative;transform-style:preserve-3d;
+.big-card{width:190px;height:300px;position:relative;
+  transform-style:preserve-3d;-webkit-transform-style:preserve-3d;
   transition:transform .8s cubic-bezier(.4,0,.2,1)}
-.big-card.flipped{transform:rotateY(180deg)}
 .big-face{position:absolute;inset:0;border-radius:16px;
-  backface-visibility:hidden;-webkit-backface-visibility:hidden;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px}
-.big-back{background:linear-gradient(145deg,#1c0840,#0a1040);border:2px solid var(--gold)}
+  backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.big-back{background:linear-gradient(145deg,#1c0840,#0a1040);border:2px solid var(--gold);
+  display:flex;align-items:center;justify-content:center;font-size:3rem;color:var(--gold2)}
 .big-back::before{content:'';position:absolute;inset:8px;border:1px solid #e8b84b44;border-radius:10px}
-.big-front{background:linear-gradient(145deg,#130530,#0a1030);border:2px solid var(--gold);
-  transform:rotateY(180deg)}
+.big-front{background:linear-gradient(160deg,#110622,#08102e);border:2px solid var(--gold);
+  transform:rotateY(180deg);display:flex;flex-direction:column;align-items:center;padding:0}
 .big-front.rev{transform:rotateY(180deg) rotate(180deg)}
-.big-emoji{font-size:3.5rem;margin-bottom:10px}
-.big-title{font-size:1rem;font-weight:700;color:var(--gold);text-align:center}
-.big-en{font-size:.7rem;color:var(--muted);margin-top:3px}
-.big-rev-badge{font-size:.68rem;background:#7c1d1d;color:#fca5a5;
-  padding:3px 10px;border-radius:20px;margin-top:6px}
+/* 큰 카드 앞면 내부 */
+.big-front-inner{width:100%;height:100%;display:flex;flex-direction:column;
+  align-items:center;padding:10px 8px;position:relative}
+.big-front-inner::before{content:'';position:absolute;inset:6px;
+  border:1px solid #e8b84b44;border-radius:11px;pointer-events:none}
+.big-front-inner::after{content:'✦';position:absolute;top:12px;left:12px;
+  font-size:.6rem;color:var(--gold);opacity:.5}
+.big-card-n{font-size:.65rem;color:var(--gold);letter-spacing:3px;opacity:.7;margin-bottom:1px}
+.big-card-deco{font-size:.45rem;color:var(--gold);opacity:.38;letter-spacing:4px;margin:2px 0}
+.big-art-wrap{flex:1;display:flex;align-items:center;justify-content:center}
+.big-art-ring{width:84px;height:84px;border-radius:50%;
+  border:1.5px solid #e8b84b44;
+  background:radial-gradient(circle,#200a50 0%,#08102a 100%);
+  box-shadow:0 0 20px #e8b84b1a,inset 0 0 18px #04020e55;
+  display:flex;align-items:center;justify-content:center}
+.big-emoji{font-size:2.8rem;line-height:1}
+.big-nameplate{width:100%;text-align:center;border-top:1px solid #e8b84b2a;padding-top:6px}
+.big-title{font-size:.9rem;font-weight:700;color:var(--gold);display:block}
+.big-en{font-size:.58rem;color:var(--muted);display:block;margin-top:1px;letter-spacing:1px}
+.big-rev-badge{font-size:.62rem;background:#7c1d1d;color:#fca5a5;
+  padding:2px 8px;border-radius:14px;margin-top:5px;display:inline-block}
 
 /* 팬 */
 #fan-area{margin:4px 0 12px}
@@ -163,24 +180,47 @@ h1{font-size:1.7rem;color:var(--gold);text-align:center;letter-spacing:6px;
   cursor:pointer;animation:fadeIn .2s ease}
 .rv-label{font-size:.75rem;color:var(--muted);letter-spacing:3px;text-transform:uppercase}
 .rv-card-outer{perspective:900px}
-.rv-card{width:210px;height:330px;position:relative;transform-style:preserve-3d;
+.rv-card{width:210px;height:330px;position:relative;
+  transform-style:preserve-3d;-webkit-transform-style:preserve-3d;
   transform:rotateY(0deg);transition:transform .85s cubic-bezier(.4,0,.2,1)}
 .rv-face{position:absolute;inset:0;border-radius:18px;
   backface-visibility:hidden;-webkit-backface-visibility:hidden;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px}
+  display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px}
 .rv-back{background:linear-gradient(145deg,#1c0840,#0a1040);border:2.5px solid var(--gold)}
 .rv-back::before{content:'';position:absolute;inset:9px;border:1px solid #e8b84b44;border-radius:12px}
 .rv-back-sym{font-size:3.5rem;opacity:.35}
-.rv-front{background:linear-gradient(160deg,#140828,#080e30);border:2.5px solid var(--gold);
-  transform:rotateY(180deg);
-  box-shadow:0 0 40px #e8b84b22,inset 0 0 30px #1a083022}
+
+/* 앞면 디자인 */
+.rv-front{background:linear-gradient(160deg,#110622,#08102e);border:2.5px solid var(--gold);
+  transform:rotateY(180deg);padding:0}
 .rv-front.rev{transform:rotateY(180deg) rotate(180deg)}
-.rv-emoji{font-size:4.5rem;margin-bottom:12px;filter:drop-shadow(0 0 12px #ffffff44)}
-.rv-name{font-size:1.15rem;font-weight:700;color:var(--gold);text-align:center;
-  text-shadow:0 0 16px #e8b84b88}
-.rv-en{font-size:.72rem;color:var(--muted);margin-top:4px}
-.rv-rev-badge{font-size:.72rem;background:#7c1d1d;color:#fca5a5;
-  padding:4px 12px;border-radius:20px;margin-top:8px}
+.rv-front-inner{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;
+  padding:12px 10px;position:relative}
+/* 안쪽 테두리 액자 */
+.rv-front-inner::before{content:'';position:absolute;inset:7px;
+  border:1px solid #e8b84b44;border-radius:13px;pointer-events:none}
+/* 모서리 장식 */
+.rv-front-inner::after{content:'✦';position:absolute;top:14px;left:14px;
+  font-size:.7rem;color:var(--gold);opacity:.5}
+.rv-corner-br{position:absolute;bottom:14px;right:14px;
+  font-size:.7rem;color:var(--gold);opacity:.5;line-height:1}
+.rv-num{font-size:.72rem;color:var(--gold);letter-spacing:4px;opacity:.75;
+  margin-bottom:2px;align-self:center}
+.rv-deco{font-size:.5rem;color:var(--gold);opacity:.4;letter-spacing:5px;margin:3px 0}
+.rv-art-wrap{flex:1;display:flex;align-items:center;justify-content:center}
+.rv-art-ring{width:108px;height:108px;border-radius:50%;
+  border:1.5px solid #e8b84b55;
+  background:radial-gradient(circle,#200a50 0%,#08102a 100%);
+  box-shadow:0 0 28px #e8b84b22,inset 0 0 24px #04020e66;
+  display:flex;align-items:center;justify-content:center}
+.rv-emoji{font-size:4rem;line-height:1;filter:drop-shadow(0 0 10px #ffffff33)}
+.rv-nameplate{width:100%;text-align:center;
+  border-top:1px solid #e8b84b33;padding-top:8px;margin-top:4px}
+.rv-name{font-size:1.05rem;font-weight:700;color:var(--gold);display:block;
+  text-shadow:0 0 12px #e8b84b66}
+.rv-en{font-size:.65rem;color:var(--muted);display:block;margin-top:2px;letter-spacing:1px}
+.rv-rev-badge{font-size:.68rem;background:#7c1d1d;color:#fca5a5;
+  padding:3px 10px;border-radius:20px;margin-top:6px}
 .rv-pos{font-size:.82rem;color:var(--gold);font-style:italic;opacity:.8}
 .rv-tap{font-size:.7rem;color:#3a386a;margin-top:4px;letter-spacing:1px}
 
@@ -632,14 +672,26 @@ function showRevealOverlay(cardIdx, reversed, posLabel, onDone){
       <div class="rv-card" id="rv-card">
         <div class="rv-face rv-back"><span class="rv-back-sym">✦</span></div>
         <div class="rv-face rv-front ${reversed?'rev':''}">
-          <div class="rv-emoji">${card.e}</div>
-          <div class="rv-name">${card.name}</div>
-          <div class="rv-en">${card.n} · ${card.en}</div>
-          ${reversed?'<div class="rv-rev-badge">↺ 역방향</div>':''}
+          <div class="rv-front-inner">
+            <span class="rv-corner-br">✦</span>
+            <div class="rv-num">${card.n}</div>
+            <div class="rv-deco">✦ · · · ✦</div>
+            <div class="rv-art-wrap">
+              <div class="rv-art-ring">
+                <div class="rv-emoji">${card.e}</div>
+              </div>
+            </div>
+            <div class="rv-deco">✦ · · · ✦</div>
+            <div class="rv-nameplate">
+              <span class="rv-name">${card.name}</span>
+              <span class="rv-en">${card.en.toUpperCase()}</span>
+            </div>
+            ${reversed?'<div class="rv-rev-badge">↺ 역방향</div>':''}
+          </div>
         </div>
       </div>
     </div>
-    <p class="rv-pos">${reversed?'그림자 에너지':'정방향 에너지'}</p>
+    <p class="rv-pos">${reversed?'🌑 그림자 에너지':'☀️ 정방향 에너지'}</p>
     <p class="rv-tap">탭해서 계속</p>`;
   document.body.appendChild(ov);
 
@@ -701,12 +753,21 @@ function placeBigCardRevealed(cardIdx,reversed){
   // 이미 앞면 확인했으므로 바로 앞면 보여주기 (뒤집힌 상태로 시작해서 살짝 스케일)
   wrap.innerHTML=`<div class="big-card" id="big-card"
     style="transform:rotateY(180deg) scale(.85);transition:transform .45s cubic-bezier(.34,1.3,.64,1)">
-    <div class="big-face big-back"><span style="font-size:3rem;opacity:.5">✦</span></div>
+    <div class="big-face big-back">✦</div>
     <div class="big-face big-front ${reversed?'rev':''}">
-      <div class="big-emoji">${card.e}</div>
-      <div class="big-title">${card.name}</div>
-      <div class="big-en">${card.n} · ${card.en}</div>
-      ${reversed?'<div class="big-rev-badge">↺ 역방향</div>':''}
+      <div class="big-front-inner">
+        <div class="big-card-n">${card.n}</div>
+        <div class="big-card-deco">✦ · · ✦</div>
+        <div class="big-art-wrap">
+          <div class="big-art-ring"><div class="big-emoji">${card.e}</div></div>
+        </div>
+        <div class="big-card-deco">✦ · · ✦</div>
+        <div class="big-nameplate">
+          <span class="big-title">${card.name}</span>
+          <span class="big-en">${card.en.toUpperCase()}</span>
+        </div>
+        ${reversed?'<div class="big-rev-badge">↺ 역방향</div>':''}
+      </div>
     </div>
   </div>`;
   sndPlace();
@@ -731,7 +792,9 @@ function placeSlotCardRevealed(slotIdx,cardIdx,reversed){
     style="transform:rotateY(180deg) scale(0);transition:transform .4s cubic-bezier(.34,1.5,.64,1)">
     <div class="slot-face slot-back">✦</div>
     <div class="slot-face slot-front ${reversed?'rev':''}">
+      <div style="font-size:.42rem;color:var(--gold);opacity:.6;letter-spacing:2px;margin-bottom:2px">${card.n}</div>
       <div class="slot-emoji">${card.e}</div>
+      <div style="width:80%;height:1px;background:#e8b84b33;margin:3px 0"></div>
       <div class="slot-name">${card.name}</div>
       ${reversed?'<div class="slot-rev-badge">↺</div>':''}
     </div>
