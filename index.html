@@ -595,7 +595,7 @@ const SPREAD_DATA={
 // ══════════════════════════════════════
 //  상태
 // ══════════════════════════════════════
-let spreadN=1, drawnCards=[], question="", allPlaced=false, selectedSlot=-1, revealedSlots=new Set();
+let spreadN=1, drawnCards=[], question="", allPlaced=false, selectedSlot=-1, revealedSlots=new Set(), resultsMode=false;
 
 // ══════════════════════════════════════
 //  페이지 전환
@@ -608,7 +608,7 @@ function restart(){startDraw(spreadN)}
 //  스프레드 시작
 // ══════════════════════════════════════
 function startDraw(n){
-  spreadN=n; drawnCards=[]; allPlaced=false; selectedSlot=-1; revealedSlots=new Set();
+  spreadN=n; drawnCards=[]; allPlaced=false; selectedSlot=-1; revealedSlots=new Set(); resultsMode=false;
   question=document.getElementById('q-input').value.trim();
   ensureAudio();
   if(!bgmOn) startBGM();
@@ -936,6 +936,7 @@ function onAllPlaced(){
 //  결과보기 — 클릭 대기 모드 진입
 // ══════════════════════════════════════
 function showAllResults(){
+  resultsMode=true;
   document.getElementById('see-results-wrap').classList.add('hidden');
   document.getElementById('main-btns').classList.remove('hidden');
   document.getElementById('interp-panel').innerHTML=
@@ -949,7 +950,7 @@ function showAllResults(){
 //  슬롯 클릭 → 플립 + 해석
 // ══════════════════════════════════════
 function onSlotClick(i){
-  if(!allPlaced||i>=drawnCards.length) return;
+  if(!allPlaced||!resultsMode||i>=drawnCards.length) return;
   const {idx,reversed}=drawnCards[i];
   const card=T[idx];
 
