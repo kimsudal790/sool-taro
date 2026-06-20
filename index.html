@@ -191,6 +191,22 @@ h1{font-size:1.7rem;color:var(--gold);text-align:center;letter-spacing:6px;
 .q-input:focus{border-color:var(--purple)}
 .q-input::placeholder{color:#404060}
 
+/* 양자택일 패널 */
+#ab-panel{margin-top:8px}
+.ab-panel-inner{background:var(--surface);border:1px solid #2e2e5a;border-radius:var(--r);padding:16px}
+.ab-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.ab-badge{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:.75rem;font-weight:700;flex-shrink:0}
+.ab-a-badge{background:#2a1a6a;border:1.5px solid #7c6aff;color:#b8aaff}
+.ab-b-badge{background:#1a2a6a;border:1.5px solid #6a9aff;color:#aacdff}
+.ab-input{flex:1;padding:9px 12px;background:#16162a;border:1.5px solid #3a3a5a;border-radius:8px;
+  color:var(--text);font-size:.9rem;outline:none;font-family:inherit}
+.ab-input:focus{border-color:var(--purple)}
+/* 양자택일 그리드 row 라벨 */
+.ab-row-label{grid-column:1/-1;font-size:.72rem;font-weight:700;letter-spacing:2px;
+  padding:6px 10px;border-radius:6px;text-align:center;margin:4px 0 2px}
+.ab-row-label.a-label{background:#2a1a6a44;color:#b8aaff;border:1px solid #7c6aff44}
+.ab-row-label.b-label{background:#1a2a6a44;color:#aacdff;border:1px solid #6a9aff44}
 #see-results-wrap{text-align:center;margin:16px 0 8px}
 #see-results-btn{font-size:1.05rem;padding:14px 36px;letter-spacing:1px}
 .slot.ready-reveal{cursor:pointer}
@@ -317,6 +333,24 @@ h1{font-size:1.7rem;color:var(--gold);text-align:center;letter-spacing:6px;
       <div class="sc-icon">🔮</div>
       <div class="sc-title">9장 풀 스토리</div>
       <div class="sc-desc">뿌리 · 현재 · 숨겨진 원인 · 내면 · 외부의 힘 · 두려움 · 희망 · 다음 행동 · 결과</div>
+    </div>
+    <div class="spread-card large" onclick="toggleABPanel()">
+      <div class="sc-icon">⚖️</div>
+      <div class="sc-title">양자택일</div>
+      <div class="sc-desc">두 선택지 비교<br>에너지 · 과정 · 결과 × 2</div>
+    </div>
+  </div>
+  <div id="ab-panel" class="hidden">
+    <div class="ab-panel-inner">
+      <div class="ab-row">
+        <span class="ab-badge ab-a-badge">A</span>
+        <input class="ab-input" id="ab-a-input" placeholder="선택지 A (예: 직장 유지)" maxlength="20">
+      </div>
+      <div class="ab-row">
+        <span class="ab-badge ab-b-badge">B</span>
+        <input class="ab-input" id="ab-b-input" placeholder="선택지 B (예: 이직)" maxlength="20">
+      </div>
+      <button class="btn btn-gold" style="margin-top:10px;width:100%" onclick="startDrawAB()">⚖️ 양자택일 시작</button>
     </div>
   </div>
 </div>
@@ -579,6 +613,14 @@ const SPREAD_DATA={
     {up:"다음에 이런 방향으로 움직여보세요. ",rev:"이 방향은 한 번 더 돌아봐야 해요. "},
     {up:"흐름이 이렇게 마무리될 거예요. ",rev:"지금 전환이 없으면 이런 결과로 이어질 수 있어요. "},
   ]},
+  6:{pos:["에너지","과정","결과","에너지","과정","결과"],prefix:[
+    {up:"이 선택지에서 현재 이런 에너지가 흐르고 있어요. ",rev:"이 선택지는 지금 이런 그림자 에너지가 있어요. "},
+    {up:"이 선택을 했을 때 이런 과정을 거치게 돼요. ",rev:"이 선택은 이런 도전이 따라와요. "},
+    {up:"이 선택지가 가져올 결과예요. ",rev:"이 선택이 가져올 그림자 결과를 살펴보세요. "},
+    {up:"이 선택지에서 현재 이런 에너지가 흐르고 있어요. ",rev:"이 선택지는 지금 이런 그림자 에너지가 있어요. "},
+    {up:"이 선택을 했을 때 이런 과정을 거치게 돼요. ",rev:"이 선택은 이런 도전이 따라와요. "},
+    {up:"이 선택지가 가져올 결과예요. ",rev:"이 선택이 가져올 그림자 결과를 살펴보세요. "},
+  ]},
   9:{pos:["과거의 뿌리","현재 상황","숨겨진 원인","내면","외부의 힘","두려움","희망","다음 행동","최종 결과"],prefix:[
     {up:"이 이야기의 뿌리가 된 과거 에너지예요. ",rev:"과거의 이런 그림자가 아직 영향을 주고 있어요. "},
     {up:"지금 이런 상황 한가운데 있어요. ",rev:"지금 이런 어려움이 드러나고 있어요. "},
@@ -596,6 +638,7 @@ const SPREAD_DATA={
 //  상태
 // ══════════════════════════════════════
 let spreadN=1, drawnCards=[], question="", allPlaced=false, selectedSlot=-1, revealedSlots=new Set(), resultsMode=false;
+let choiceA='선택 A', choiceB='선택 B';
 
 // ══════════════════════════════════════
 //  페이지 전환
@@ -603,6 +646,22 @@ let spreadN=1, drawnCards=[], question="", allPlaced=false, selectedSlot=-1, rev
 function show(id){['p-start','p-main'].forEach(x=>document.getElementById(x).classList.add('hidden'));document.getElementById(id).classList.remove('hidden')}
 function goStart(){show('p-start')}
 function restart(){startDraw(spreadN)}
+
+function toggleABPanel(){
+  const p=document.getElementById('ab-panel');
+  p.classList.toggle('hidden');
+  if(!p.classList.contains('hidden')) document.getElementById('ab-a-input').focus();
+}
+function startDrawAB(){
+  const a=document.getElementById('ab-a-input').value.trim();
+  const b=document.getElementById('ab-b-input').value.trim();
+  choiceA=a||'선택 A';
+  choiceB=b||'선택 B';
+  // pos 라벨을 A/B 이름으로 업데이트
+  SPREAD_DATA[6].pos=['에너지','과정','결과','에너지','과정','결과'];
+  document.getElementById('ab-panel').classList.add('hidden');
+  startDraw(6);
+}
 
 // ══════════════════════════════════════
 //  스프레드 시작
@@ -643,14 +702,30 @@ function renderSpreadLayout(){
   const cols=spreadN<=3?spreadN:3;
   const layout=document.getElementById('spread-layout');
   layout.style.gridTemplateColumns=`repeat(${cols},1fr)`;
-  layout.innerHTML=posArr.map((lbl,i)=>`
-    <div class="slot" id="slot-${i}" onclick="onSlotClick(${i})">
-      <div class="slot-lbl">${lbl}</div>
-      <div class="slot-wrap" id="slot-wrap-${i}">
-        <div class="slot-empty">✦</div>
-      </div>
-      <div class="slot-name-under" id="slot-name-${i}"></div>
-    </div>`).join('');
+
+  if(spreadN===6){
+    // 양자택일 — A/B 행 라벨 삽입
+    const slotHtml=(lbl,i)=>`
+      <div class="slot" id="slot-${i}" onclick="onSlotClick(${i})">
+        <div class="slot-lbl">${lbl}</div>
+        <div class="slot-wrap" id="slot-wrap-${i}"><div class="slot-empty">✦</div></div>
+        <div class="slot-name-under" id="slot-name-${i}"></div>
+      </div>`;
+    layout.innerHTML=
+      `<div class="ab-row-label a-label">⚖️ ${choiceA}</div>`+
+      [0,1,2].map(i=>slotHtml(posArr[i],i)).join('')+
+      `<div class="ab-row-label b-label">⚖️ ${choiceB}</div>`+
+      [3,4,5].map(i=>slotHtml(posArr[i],i)).join('');
+  } else {
+    layout.innerHTML=posArr.map((lbl,i)=>`
+      <div class="slot" id="slot-${i}" onclick="onSlotClick(${i})">
+        <div class="slot-lbl">${lbl}</div>
+        <div class="slot-wrap" id="slot-wrap-${i}">
+          <div class="slot-empty">✦</div>
+        </div>
+        <div class="slot-name-under" id="slot-name-${i}"></div>
+      </div>`).join('');
+  }
   highlightSlot(0);
 }
 
@@ -1001,7 +1076,15 @@ function buildInterp(card,reversed,posIdx){
       posCtx=reversed?data.prefix[posIdx].rev:data.prefix[posIdx].up;
   }
   const data=SPREAD_DATA[spreadN];
-  const posName=(posIdx!==null&&posIdx!==undefined&&data)?`${data.pos[posIdx]} · `:'';
+  let posName='';
+  if(posIdx!==null&&posIdx!==undefined&&data){
+    if(spreadN===6){
+      const side=posIdx<3?choiceA:choiceB;
+      posName=`${side} · ${data.pos[posIdx]} · `;
+    } else {
+      posName=`${data.pos[posIdx]} · `;
+    }
+  }
   const shadowLabel=reversed?'🌑 그림자 에너지':'☀️ 정방향 에너지';
   const cardFace=`<div class="interp-card-wrap">
     <div class="interp-card-face${reversed?' rev-card':''}">
